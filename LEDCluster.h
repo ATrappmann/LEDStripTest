@@ -48,7 +48,7 @@ private:
    * attributes of the LEDCluster
    */
   Direction direction;          // direction of movement
-  bool      wrapAround;         // restart cluster at other end of LED strip if it moves out of the end of the strip 
+  bool      wrapAround;         // restart cluster at other end of LED strip if it moves out of the end of the strip
   bool      backAndForth;       // change direction, when cluster reaches end of LED strip
   uint32_t  updateInterval;     // speed of movement in milliseconds
   uint32_t  startTime;          // start time for activation of this cluster in milliseconds
@@ -56,14 +56,15 @@ private:
   int32_t   startPosition;      // position of this cluster in the LED strip, when the cluster gets started
   uint8_t   saturationInterval; // pulse saturation
   uint8_t   peakLength;
-  
+  uint16_t  sourceHue;
+
   /*
    * control attributes for LEDClusterController
    */
   int32_t   position;         // current position; not an uint, may be negative!
   bool      done;             // flag, if cluster is done (will be deleted)
   uint32_t  lastUpdate;       // in milliseconds
-  
+
   /*
    * some handy initialization methods with predefined behavior
    */
@@ -72,27 +73,31 @@ public:
   static LEDCluster *initRGBBar(const uint32_t color, const uint16_t length);
   static LEDCluster *initRGBRainbow(const uint16_t width);
   static LEDCluster *initRGBPattern(const uint32_t color, const uint8_t pattern);
+
+  static LEDCluster *initPixelSource(const uint16_t width, const uint16_t hue);
   static LEDCluster *initPeakMeter(const uint16_t width, const uint8_t peakLength);
-  
+
   static LEDCluster *initPulsarPixel(const uint16_t hue, const uint8_t saturationInterval);
   static LEDCluster *initPulsarBar(const uint16_t hue, const uint8_t saturationInterval, const uint16_t length);
   static LEDCluster *initPulsarRainbow(const uint8_t saturationInterval, const uint16_t width);
-  
+
 public:
   LEDCluster(const uint16_t numLEDs);
   ~LEDCluster();
 
   bool isInitialized();
-  
+
   /*
    * getter & setter methods for attributes of the LEDcluster
    */
   void setRGBPixel(const uint16_t no, const uint32_t color);
   uint32_t getRGBPixel(const uint16_t no) const;
-  
+
   void setHSVPixel(const uint16_t no, const uint16_t hue, const uint8_t saturation);
   uint32_t getHSVPixel(const uint16_t no) const;
-  
+  uint16_t getHue(const uint16_t no) const { return pixels[no].hsvColor.hue; }
+  uint8_t  getSaturation(const uint16_t no) const { return pixels[no].hsvColor.saturation; }
+
   void  setDirection(const Direction dir);
   Direction getDirection() const  { return direction; }
 
@@ -106,14 +111,16 @@ public:
   uint32_t getStartInterval() const   { return startInterval; }
 
   void setStartPosition(const int32_t pos);
-  int32_t getStartPosition() const  { return startPosition; }  
-  
+  int32_t getStartPosition() const  { return startPosition; }
+
   void  enableWrapAround();
   bool  doWrapAround() const  { return wrapAround; }
 
   void  enableBackAndForth();
   bool  doBackAndForth() const  { return backAndForth; }
 
+  uint16_t getSourceHue() const { return sourceHue; }
+  
   /*
    * controlling methods for LEDClusterController
    */
@@ -125,14 +132,17 @@ public:
 
   void  markDone()      { done = true; }
   bool  isDone() const  { return done; }
-   
+
   bool  hasPixel(const uint16_t pixelNo) const;
   bool  isPulsar() const;
   bool  isPeakMeter() const;
+  bool  isPixelSource() const;
+
   uint32_t getPixelColorAtIndex(const uint16_t pixelNo);
   uint32_t getPulsarAtIndex(const uint16_t pixelNo);
-  
+
   bool  shouldMove();
+
 };
 
 #endif /* LEDCLUSTER_H */

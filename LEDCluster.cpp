@@ -19,13 +19,13 @@
  * Constructor & Destructor
  */
 LEDCluster::LEDCluster(uint16_t numLEDs) {
-  SEROUT(F("LEDCluster::LEDCluster(") << numLEDs << ")\n"); 
+  SEROUT(F("LEDCluster::LEDCluster(") << numLEDs << ")\n");
   length = numLEDs;
   pixels = new PixelColor[length];
   if (NULL == pixels) {
     Serial << "ERROR: Cannot allocate enought memory!\n";
   }
-  
+
   direction = NoD;
   wrapAround = false;
   backAndForth = false;
@@ -35,9 +35,10 @@ LEDCluster::LEDCluster(uint16_t numLEDs) {
   startPosition = 0;
   saturationInterval = 0;
   peakLength = 0;
-  
+  sourceHue = 0;
+
   position = 0;
-  done = false;  
+  done = false;
   lastUpdate = 0L;
 }
 
@@ -48,7 +49,7 @@ LEDCluster::~LEDCluster() {
 
 bool LEDCluster::isInitialized() {
   if (NULL != pixels) {
-    return true;  
+    return true;
   }
   else return false;
 }
@@ -62,7 +63,7 @@ LEDCluster *LEDCluster::initRGBPixel(const uint32_t color) {
   if (cluster->isInitialized()) {
     cluster->setRGBPixel(0, color);
     return cluster;
-  } 
+  }
   else return NULL;
 }
 
@@ -84,7 +85,7 @@ LEDCluster *LEDCluster::initRGBRainbow(const uint16_t width) {
     for (uint16_t i=0; i<width; i++) {
 #ifdef USE_DOTSTAR
       uint32_t color = Adafruit_DotStar::gamma32(Adafruit_DotStar::ColorHSV(spread*i));
-#elif USE_NEOPIXEL      
+#elif USE_NEOPIXEL
       uint32_t color = Adafruit_NeoPixel::gamma32(Adafruit_NeoPixel::ColorHSV(spread*i));
 #else
 #error Either define USE_NEOPIXEL or USE_DOTSTAR
@@ -105,6 +106,16 @@ LEDCluster *LEDCluster::initRGBPattern(const uint32_t color, const uint8_t patte
       }
       else cluster->setRGBPixel(bit, COLOR_BLACK);
     }
+    return cluster;
+  }
+  else return NULL;
+}
+
+LEDCluster *LEDCluster::initPixelSource(const uint16_t width, const uint16_t hue) {
+  LEDCluster *cluster = new LEDCluster(width);
+  if (cluster->isInitialized()) {
+    cluster->setHSVPixel(width/2, hue, 255);
+    cluster->sourceHue = hue;
     return cluster;
   }
   else return NULL;
@@ -131,7 +142,7 @@ LEDCluster *LEDCluster::initPeakMeter(const uint16_t width, const uint8_t peakLe
     }
     return cluster;
   }
-  else return NULL;  
+  else return NULL;
 }
 
 LEDCluster *LEDCluster::initPulsarPixel(const uint16_t hue, const uint8_t saturationInterval) {
@@ -177,7 +188,7 @@ void LEDCluster::setRGBPixel(const uint16_t no, const uint32_t color) {
   if (no < length) {
     pixels[no].rgbColor.red   = (color >> 16) & 0xff;
     pixels[no].rgbColor.green = (color >> 8) & 0xff;
-    pixels[no].rgbColor.blue  = color & 0xff;    
+    pixels[no].rgbColor.blue  = color & 0xff;
   }
 }
 
@@ -186,7 +197,7 @@ uint32_t LEDCluster::getRGBPixel(const uint16_t no) const {
   if (no < length) {
     uint32_t color = ((uint32_t)pixels[no].rgbColor.red << 16) | ((uint32_t)pixels[no].rgbColor.green << 8) | (uint32_t)pixels[no].rgbColor.blue;
     SEROUT(F("LEDCluster::getRGBPixel(") << no << ") color=" << toHexString(color) << LF);
-    return color;  
+    return color;
   }
   else return 0L;
 }
@@ -201,9 +212,9 @@ void LEDCluster::setHSVPixel(const uint16_t no, const uint16_t hue, const uint8_
 uint32_t LEDCluster::getHSVPixel(const uint16_t no) const {
   if (no < length) {
 #ifdef USE_DOTSTAR
-    return Adafruit_DotStar::gamma32(Adafruit_DotStar::ColorHSV(pixels[no].hsvColor.hue, pixels[no].hsvColor.saturation, 255));  
+    return Adafruit_DotStar::gamma32(Adafruit_DotStar::ColorHSV(pixels[no].hsvColor.hue, pixels[no].hsvColor.saturation, 255));
 #elif USE_NEOPIXEL
-    return Adafruit_NeoPixel::gamma32(Adafruit_NeoPixel::ColorHSV(pixels[no].hsvColor.hue, pixels[no].hsvColor.saturation, 255));  
+    return Adafruit_NeoPixel::gamma32(Adafruit_NeoPixel::ColorHSV(pixels[no].hsvColor.hue, pixels[no].hsvColor.saturation, 255));
 #else
 #error Either define USE_NEOPIXEL or USE_DOTSTAR
 #endif
@@ -216,12 +227,12 @@ void LEDCluster::setDirection(const Direction dir) {
 }
 
 void LEDCluster::enableWrapAround() {
-  wrapAround = true;  
+  wrapAround = true;
   backAndForth = false; // exclusive with back-and-forth
 }
 
 void LEDCluster::enableBackAndForth() {
-  backAndForth = true;  
+  backAndForth = true;
   wrapAround = false;   // exclusive with wrap-around
 }
 
@@ -279,9 +290,16 @@ bool LEDCluster::isPeakMeter() const {
   else return false;
 }
 
+bool LEDCluster::isPixelSource() const {
+  if (sourceHue > 0) {
+    return true;
+  }
+  else return false;
+}
+
 uint32_t LEDCluster::getPixelColorAtIndex(const uint16_t pixelNo) {
   if (!hasPixel(pixelNo)) return 0L;
-  int32_t index = pixelNo - position;  
+  int32_t index = pixelNo - position;
   uint32_t color = getRGBPixel(index);
   SEROUT(F("LEDCluster::getPixelColorAtIndex(") << pixelNo << ") idx=" << index << ", color=" << toHexString(color) << LF);
   return color;

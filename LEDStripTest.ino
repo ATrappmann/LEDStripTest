@@ -29,7 +29,7 @@ LEDClusterController ledController(NUMPIXELS, DATA_PIN, WS2815CONFIG, MAXCLUSTER
 #error Either define USE_NEOPIXEL or USE_DOTSTAR
 #endif
 
-void setup() {  
+void setup() {
   Serial.begin(115200);
   while (!Serial);
   Serial << F("------------------------------\n");
@@ -84,7 +84,7 @@ void setup() {
     ledController.addCluster(cluster4, 0);
     Serial << F("Free Memory with Cluster4: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
   }
-  
+
   LEDCluster *cluster5 = LEDCluster::initPulsarPixel(0, 1);
   if (NULL != cluster5) {
     cluster5->setDirection(LtR);
@@ -105,12 +105,18 @@ void setup() {
 
   LEDCluster *cluster7 = LEDCluster::initPeakMeter(20, 17);
   if (NULL != cluster7) {
-//    cluster7->setDirection(LtR);
     cluster7->setUpdateInterval(50L);
     ledController.addCluster(cluster7, 0);
     Serial << F("Free Memory with Cluster7: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
   }
-  
+
+
+  LEDCluster *cluster8 = LEDCluster::initPixelSource(21, 0);
+  if (NULL != cluster8) {
+    ledController.addCluster(cluster8, 0);
+    Serial << F("Free Memory with Cluster8: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
+  }
+
   uint32_t freeMemory = TrappmannRobotics::getFreeMemory();
   Serial << F("Used Memory: ") << (initialFreeMemory - freeMemory) << LF;
   delay(1000);
@@ -120,7 +126,7 @@ unsigned long lastMinute = 0L;
 void loop() {
   ledController.show();
 
-  // flash all LEDs every 60secs 
+  // flash all LEDs every 60secs
   unsigned long minute = millis() / 60000L;
   if (minute > lastMinute) {
     ledController.flashAll(COLOR_WHITE);
@@ -131,7 +137,7 @@ void loop() {
   if (minute > 10) {
     Serial << millis() << F(": auto stop after 10min\n");
     ledController.end();
-    digitalWrite(RELAIS_PIN, LOW);    
+    digitalWrite(RELAIS_PIN, LOW);
     Serial.flush();
     Serial.end();
     exit(0);

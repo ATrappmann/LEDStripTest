@@ -1,5 +1,5 @@
 // NAME: LEDClusterController.cpp
-// 
+//
 // DESC:
 //
 // DEPENDENCIES:
@@ -16,21 +16,21 @@
 #include "LEDCluster.h"
 
 #ifdef USE_DOTSTAR
-LEDClusterController::LEDClusterController(const uint16_t numLEDs, const uint8_t ledConfig, const uint8_t maxClusters) 
+LEDClusterController::LEDClusterController(const uint16_t numLEDs, const uint8_t ledConfig, const uint8_t maxClusters)
                      :Adafruit_DotStar(numLEDs, ledConfig) {
   this->maxClusters = maxClusters;
   clusters = new LEDClusterPtr[maxClusters];
   numClusters = 0;
 }
 
-LEDClusterController::LEDClusterController(const uint16_t numLEDs, const uint8_t dataPin, const uint8_t clockPin, const uint8_t ledConfig, const uint8_t maxClusters) 
+LEDClusterController::LEDClusterController(const uint16_t numLEDs, const uint8_t dataPin, const uint8_t clockPin, const uint8_t ledConfig, const uint8_t maxClusters)
                      :Adafruit_DotStar(numLEDs, dataPin, clockPin, ledConfig) {
   this->maxClusters = maxClusters;
   clusters = new LEDClusterPtr[maxClusters];
   numClusters = 0;
 }
 #elif USE_NEOPIXEL
-LEDClusterController::LEDClusterController(const uint16_t numLEDs, const uint8_t dataPin, const uint8_t ledConfig, const uint8_t maxClusters) 
+LEDClusterController::LEDClusterController(const uint16_t numLEDs, const uint8_t dataPin, const uint8_t ledConfig, const uint8_t maxClusters)
                      :Adafruit_NeoPixel(numLEDs, dataPin, ledConfig) {
   this->maxClusters = maxClusters;
   clusters = new LEDClusterPtr[maxClusters];
@@ -42,11 +42,11 @@ LEDClusterController::LEDClusterController(const uint16_t numLEDs, const uint8_t
 
 LEDClusterController::~LEDClusterController() {
   SEROUT(millis() << F(": delete LEDClusterController\n"));
-  delete[] clusters; clusters = NULL;  
+  delete[] clusters; clusters = NULL;
 }
 
 void LEDClusterController::begin() {
-#ifdef USE_DOTSTAR  
+#ifdef USE_DOTSTAR
   Adafruit_DotStar::begin(); // initialize pins for output
   Adafruit_DotStar::show();  // turn off all LEDs
   Adafruit_DotStar::setBrightness(48);
@@ -62,14 +62,14 @@ void LEDClusterController::begin() {
   Adafruit_NeoPixel::setBrightness(48);
 
   // test configuration setting, first 3 LEDs must be R-G-B
-  Adafruit_NeoPixel::setPixelColor(0, COLOR_RED); 
+  Adafruit_NeoPixel::setPixelColor(0, COLOR_RED);
   Adafruit_NeoPixel::setPixelColor(1, COLOR_GREEN);
   Adafruit_NeoPixel::setPixelColor(2, COLOR_BLUE);
   Adafruit_NeoPixel::show();
 #else
 #error Either define USE_NEOPIXEL or USE_DOTSTAR
 #endif
-  
+
   running = true;
 }
 
@@ -97,13 +97,16 @@ bool LEDClusterController::addCluster(const LEDCluster *cluster, const int32_t p
     clusters[numClusters++] = cluster;
     return true;
   }
-  
+
   return false;
 }
 
 void LEDClusterController::show() {
   if (!running) return;
 
+  /*
+   * clear LED strip
+   */
 #ifdef USE_DOTSTAR
   Adafruit_DotStar::clear();
 #elif USE_NEOPIXEL
@@ -112,12 +115,18 @@ void LEDClusterController::show() {
 #error Either define USE_NEOPIXEL or USE_DOTSTAR
 #endif
 
+  /*
+   * set pixels of all clusters in LED strip
+   */
   for (uint8_t clusterNo=0; clusterNo<numClusters; clusterNo++) {
     LEDCluster *cluster = clusters[clusterNo];
     if ((cluster->getStartInterval() > 0L) && (cluster->getStartTime() > millis())) { // not yet
       continue;
     }
 
+    /*
+     * modify pixels in cluster
+     */
     if (cluster->isPeakMeter() && cluster->shouldMove()) {
       uint8_t peak = cluster->getPeakLength();
       uint16_t len = cluster->getLength() - peak;
@@ -137,7 +146,39 @@ void LEDClusterController::show() {
         cluster->setRGBPixel(i, COLOR_BLACK);
       }
     }
-    
+    else if (cluster->isPixelSource()) {
+      uint16_t center = cluster->getLength() / 2;
+      uint8_t saturationDelta = 255 / center;
+
+      // run backward from center
+      // copy pixel[i] to pixel[i-1] and reduce saturation
+      for (uint16_t i=1; i<center; i++) {
+        uint16_t hue = cluster->getHue(i);
+        uint16_t saturation = cluster->getSaturation(i);
+        if (saturation >= saturationDelta) {
+          cluster->setHSVPixel(i-1, hue, saturation-saturationDelta);
+        }
+        else cluster->setRGBPixel(i-1, COLOR_BLACK);
+      }
+
+      // instantiate new pixel in center
+      cluster->setHSVPixel(center, cluster->getSourceHue(), 255);
+
+      // run outward from center
+      // copy pixel[i] to pixel[i+1] and reduce saturation
+      for (uint16_t i=cluster->getLength()-2; i>center; i--) {
+        uint16_t hue = cluster->getHue(i);
+        uint16_t saturation = cluster->getSaturation(i);
+        if (saturation >= saturationDelta) {
+          cluster->setHSVPixel(i+1, hue, saturation-saturationDelta);
+        }
+        else cluster->setRGBPixel(i+1, COLOR_BLACK);
+      }
+    }
+
+    /*
+     * modify pixels in LED strip
+     */
     for (uint16_t pixelNo=0; pixelNo<numPixels(); pixelNo++) {
       if (cluster->hasPixel(pixelNo)) {
         uint32_t color;
@@ -159,7 +200,7 @@ void LEDClusterController::show() {
 
     if (cluster->shouldMove()) {
       int32_t position = cluster->getPosition();
-      
+
       switch (cluster->getDirection()) {
         case NoD: // no direction
           break;
@@ -204,6 +245,10 @@ void LEDClusterController::show() {
       else cluster->setPosition(position);
     }
   }
+
+  /*
+   * display pixels of LED strip
+   */
 #ifdef USE_DOTSTAR
   Adafruit_DotStar::show();
 #elif USE_NEOPIXEL
@@ -212,6 +257,9 @@ void LEDClusterController::show() {
 #error Either define USE_NEOPIXEL or USE_DOTSTAR
 #endif
 
+  /*
+   * remove clusters which are done
+   */
   for (uint8_t clusterNo=0; clusterNo<numClusters; clusterNo++) {
     if (clusters[clusterNo]->isDone()) {
       Serial << millis() << F(": Cluster #") << clusterNo << F(" done!\n");
@@ -222,13 +270,13 @@ void LEDClusterController::show() {
       numClusters--;
       clusters[numClusters] = NULL;
     }
-  }  
+  }
 }
 
 void LEDClusterController::flashAll(const uint32_t color) const {
   SEROUT(millis() << F(": flashAll color = 0x") << toHexString(color) << LF);
 #ifdef USE_DOTSTAR
-  uint8_t oldBrightness = Adafruit_DotStar::getBrightness();  
+  uint8_t oldBrightness = Adafruit_DotStar::getBrightness();
   Adafruit_DotStar::setBrightness(255); // max
   Adafruit_DotStar::fill(color, 0, numPixels());
   Adafruit_DotStar::show();

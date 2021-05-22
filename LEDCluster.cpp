@@ -18,13 +18,11 @@
 /*
  * Constructor & Destructor
  */
-LEDCluster::LEDCluster(uint16_t numLEDs) {
-  SEROUT(F("LEDCluster::LEDCluster(") << numLEDs << ")\n");
-  length = numLEDs;
-  pixels = new PixelColor[length];
-  if (NULL == pixels) {
-    Serial << "ERROR: Cannot allocate enought memory!\n";
-  }
+LEDCluster::LEDCluster(const uint16_t length, const uint16_t width /* =1 */) {
+  SEROUT(F("LEDCluster::LEDCluster(") << length << ", " << width << ")\n");
+  this->length = length;
+  this->pixels = new PixelColor[length];
+  this->width = width;
 
   direction = NoD;
   wrapAround = false;
@@ -57,9 +55,8 @@ bool LEDCluster::isInitialized() {
 /*
  * some handy initialization methods with predefined behavior
  */
-LEDCluster *LEDCluster::initRGBPixel(const uint32_t color) {
-  SEROUT(F("LEDCluster::initRGBPixel(") << toHexString(color) << ")\n");
-  LEDCluster *cluster = new LEDCluster(1);
+LEDCluster *LEDCluster::initRGBPixel(const uint32_t color, const uint16_t width /* =1 */) {
+  LEDCluster *cluster = new LEDCluster(1, width);
   if (cluster->isInitialized()) {
     cluster->setRGBPixel(0, color);
     return cluster;
@@ -67,22 +64,11 @@ LEDCluster *LEDCluster::initRGBPixel(const uint32_t color) {
   else return NULL;
 }
 
-LEDCluster *LEDCluster::initRGBBar(const uint32_t color, const uint16_t length) {
+LEDCluster *LEDCluster::initRGBRainbow(const uint16_t length) {
   LEDCluster *cluster = new LEDCluster(length);
   if (cluster->isInitialized()) {
+    const uint16_t spread = 65536L / length;
     for (uint16_t i=0; i<length; i++) {
-      cluster->setRGBPixel(i, color);
-    }
-    return cluster;
-  }
-  else return NULL;
-}
-
-LEDCluster *LEDCluster::initRGBRainbow(const uint16_t width) {
-  LEDCluster *cluster = new LEDCluster(width);
-  if (cluster->isInitialized()) {
-    const uint16_t spread = 65536L / width;
-    for (uint16_t i=0; i<width; i++) {
 #ifdef USE_DOTSTAR
       uint32_t color = Adafruit_DotStar::gamma32(Adafruit_DotStar::ColorHSV(spread*i));
 #elif USE_NEOPIXEL
@@ -111,33 +97,33 @@ LEDCluster *LEDCluster::initRGBPattern(const uint32_t color, const uint8_t patte
   else return NULL;
 }
 
-LEDCluster *LEDCluster::initPixelSource(const uint16_t width, const uint16_t hue) {
-  LEDCluster *cluster = new LEDCluster(width);
+LEDCluster *LEDCluster::initPixelSource(const uint16_t length, const uint16_t hue) {
+  LEDCluster *cluster = new LEDCluster(length);
   if (cluster->isInitialized()) {
-    cluster->setHSVPixel(width/2, hue, 255);
+    cluster->setHSVPixel(length/2, hue, 255);
     cluster->sourceHue = hue;
     return cluster;
   }
   else return NULL;
 }
 
-LEDCluster *LEDCluster::initPeakMeter(const uint16_t width, const uint8_t peakLength) {
-  if (peakLength >= width) return NULL;
-  LEDCluster *cluster = new LEDCluster(width+peakLength);
+LEDCluster *LEDCluster::initPeakMeter(const uint16_t length, const uint8_t peakLength) {
+  if (peakLength >= length) return NULL;
+  LEDCluster *cluster = new LEDCluster(length+peakLength);
   if (cluster->isInitialized()) {
     cluster->peakLength = peakLength;
-    for (uint16_t i=0; i<width; i++) {
-      if (i < (width/2)) {
+    for (uint16_t i=0; i<length; i++) {
+      if (i < (length/2)) {
         cluster->setRGBPixel(i, COLOR_GREEN);
       }
-      else if (i < (width/2 + width/3)) {
+      else if (i < (length/2 + length/3)) {
         cluster->setRGBPixel(i, COLOR_YELLOW);
       }
       else {
         cluster->setRGBPixel(i, COLOR_RED);
       }
     }
-    for (uint16_t i=width; i<width+peakLength; i++) {
+    for (uint16_t i=length; i<length+peakLength; i++) {
       cluster->setRGBPixel(i, COLOR_BLACK);
     }
     return cluster;
@@ -145,8 +131,8 @@ LEDCluster *LEDCluster::initPeakMeter(const uint16_t width, const uint8_t peakLe
   else return NULL;
 }
 
-LEDCluster *LEDCluster::initPulsarPixel(const uint16_t hue, const uint8_t saturationInterval) {
-  LEDCluster *cluster = new LEDCluster(1);
+LEDCluster *LEDCluster::initPulsarPixel(const uint16_t hue, const uint8_t saturationInterval, const uint16_t width /* =1 */) {
+  LEDCluster *cluster = new LEDCluster(1, width);
   if (cluster->isInitialized()) {
     cluster->setHSVPixel(0, hue, saturationInterval);
     cluster->saturationInterval = saturationInterval;
@@ -155,23 +141,11 @@ LEDCluster *LEDCluster::initPulsarPixel(const uint16_t hue, const uint8_t satura
   else return NULL;
 }
 
-LEDCluster *LEDCluster::initPulsarBar(const uint16_t hue, const uint8_t saturationInterval, const uint16_t length) {
+LEDCluster *LEDCluster::initPulsarRainbow(const uint8_t saturationInterval, const uint16_t length) {
   LEDCluster *cluster = new LEDCluster(length);
   if (cluster->isInitialized()) {
+    const uint16_t spread = 65536L / length;
     for (uint16_t i=0; i<length; i++) {
-      cluster->setHSVPixel(i, hue, saturationInterval);
-    }
-    cluster->saturationInterval = saturationInterval;
-    return cluster;
-  }
-  else return NULL;
-}
-
-LEDCluster *LEDCluster::initPulsarRainbow(const uint8_t saturationInterval, const uint16_t width) {
-  LEDCluster *cluster = new LEDCluster(width);
-  if (cluster->isInitialized()) {
-    const uint16_t spread = 65536L / width;
-    for (uint16_t i=0; i<width; i++) {
       cluster->setHSVPixel(i, spread*i, saturationInterval);
     }
     cluster->saturationInterval = saturationInterval;
@@ -270,7 +244,7 @@ bool LEDCluster::shouldMove() {
 }
 
 bool LEDCluster::hasPixel(const uint16_t pixelNo) const {
-  if ((pixelNo < position) || (pixelNo >= position+length)) {
+  if ((pixelNo < position) || (pixelNo >= position+(length*width))) {
     return false;
   }
   else return true;
@@ -299,15 +273,17 @@ bool LEDCluster::isPixelSource() const {
 
 uint32_t LEDCluster::getPixelColorAtIndex(const uint16_t pixelNo) {
   if (!hasPixel(pixelNo)) return 0L;
-  int32_t index = pixelNo - position;
+  uint16_t absIndex = pixelNo - position;
+  uint16_t index = absIndex % length;
   uint32_t color = getRGBPixel(index);
-  SEROUT(F("LEDCluster::getPixelColorAtIndex(") << pixelNo << ") idx=" << index << ", color=" << toHexString(color) << LF);
+  SEROUT(F("LEDCluster::getPixelColorAtIndex(") << pixelNo << F(") idx=") << index << F(", color=") << toHexString(color) << LF);
   return color;
 }
 
 uint32_t LEDCluster::getPulsarAtIndex(const uint16_t pixelNo) {
   if (!hasPixel(pixelNo)) return 0L;
-  int32_t index = pixelNo - position;
+  int32_t absIndex = pixelNo - position;
+  int32_t index = absIndex % length;
   pixels[index].hsvColor.saturation += saturationInterval;
 #ifdef USE_DOTSTAR
   uint32_t color = Adafruit_DotStar::gamma32(Adafruit_DotStar::ColorHSV(pixels[index].hsvColor.hue, pixels[index].hsvColor.saturation, 255));

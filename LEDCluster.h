@@ -41,8 +41,9 @@ enum Direction {
 
 class LEDCluster {
 private:
-  uint16_t    length;           // length of cluster
+  uint16_t    length;           // length of pixels array
   PixelColor  *pixels;          // array of colors for the LEDs in the cluster
+  uint16_t    width;            // width of pixels array (multiplication factor)
 
   /*
    * attributes of the LEDCluster
@@ -69,20 +70,18 @@ private:
    * some handy initialization methods with predefined behavior
    */
 public:
-  static LEDCluster *initRGBPixel(const uint32_t color);
-  static LEDCluster *initRGBBar(const uint32_t color, const uint16_t length);
-  static LEDCluster *initRGBRainbow(const uint16_t width);
+  static LEDCluster *initRGBPixel(const uint32_t color, const uint16_t width = 1);
+  static LEDCluster *initRGBRainbow(const uint16_t length);
   static LEDCluster *initRGBPattern(const uint32_t color, const uint8_t pattern);
 
-  static LEDCluster *initPixelSource(const uint16_t width, const uint16_t hue);
-  static LEDCluster *initPeakMeter(const uint16_t width, const uint8_t peakLength);
+  static LEDCluster *initPixelSource(const uint16_t length, const uint16_t hue);
+  static LEDCluster *initPeakMeter(const uint16_t length, const uint8_t peakLength);
 
-  static LEDCluster *initPulsarPixel(const uint16_t hue, const uint8_t saturationInterval);
-  static LEDCluster *initPulsarBar(const uint16_t hue, const uint8_t saturationInterval, const uint16_t length);
+  static LEDCluster *initPulsarPixel(const uint16_t hue, const uint8_t saturationInterval, const uint16_t width = 1);
   static LEDCluster *initPulsarRainbow(const uint8_t saturationInterval, const uint16_t width);
 
 public:
-  LEDCluster(const uint16_t numLEDs);
+  LEDCluster(const uint16_t length, const uint16_t width = 1);
   ~LEDCluster();
 
   bool isInitialized();
@@ -120,11 +119,12 @@ public:
   bool  doBackAndForth() const  { return backAndForth; }
 
   uint16_t getSourceHue() const { return sourceHue; }
-  
+
   /*
    * controlling methods for LEDClusterController
    */
   uint16_t  getLength() const { return length; }
+  uint16_t  getWidth() const { return width; }
   uint8_t   getPeakLength() const { return peakLength; }
 
   void    setPosition(const int32_t pos);

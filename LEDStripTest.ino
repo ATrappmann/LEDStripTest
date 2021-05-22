@@ -11,8 +11,8 @@
 #include "LEDClusterController.h"
 #include "LEDCluster.h"
 
-#define NUMPIXELS     300 //271
-#define MAXCLUSTER    10
+#define NUMPIXELS     1036  //300 //271
+#define MAXCLUSTER    11
 
 #define RELAIS_PIN    5   // optional: pin for relais to turn on/off power to LED strip
 
@@ -53,6 +53,7 @@ void setup() {
   ledController.begin();  // first 3 LEDs should be R-G-B
   delay(1000);
 
+/*
   LEDCluster *cluster1 = LEDCluster::initRGBRainbow(6);
   if (NULL != cluster1) {
     ledController.addCluster(cluster1, (NUMPIXELS-6)/2);
@@ -115,6 +116,82 @@ void setup() {
   if (NULL != cluster8) {
     ledController.addCluster(cluster8, 0);
     Serial << F("Free Memory with Cluster8: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
+  }
+*/
+
+#define ABSCHNITT_A 73
+#define ABSCHNITT_B 86
+#define ABSCHNITT_C 171
+#define ABSCHNITT_D 86
+#define ABSCHNITT_E 84
+#define ABSCHNITT_F 171
+#define ABSCHNITT_G 11
+#define ABSCHNITT_H 38
+#define ABSCHNITT_I 172
+#define ABSCHNITT_J 39
+#define ABSCHNITT_K 105
+
+  LEDCluster *cluster0 = LEDCluster::initRGBPixel(COLOR_RED, ABSCHNITT_G);
+  if (NULL != cluster0) {
+    ledController.addCluster(cluster0, 682-ABSCHNITT_G);
+    Serial << F("Free Memory with Cluster0: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
+  }
+  LEDCluster *cluster1 = LEDCluster::initRGBPixel(COLOR_RED, ABSCHNITT_A);
+  if (NULL != cluster1) {
+    ledController.addCluster(cluster1, 0);
+    Serial << F("Free Memory with Cluster1: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
+  }
+  LEDCluster *cluster2 = LEDCluster::initRGBPixel(COLOR_GREEN, ABSCHNITT_B);
+  if (NULL != cluster2) {
+    ledController.addCluster(cluster2, ABSCHNITT_A);
+    Serial << F("Free Memory with Cluster2: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
+  }
+
+  LEDCluster *cluster3 = LEDCluster::initRGBPixel(COLOR_BLUE, ABSCHNITT_C);
+  if (NULL != cluster3) {
+    ledController.addCluster(cluster3, ABSCHNITT_A+ABSCHNITT_B);
+    Serial << F("Free Memory with Cluster3: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
+  }
+
+  LEDCluster *cluster4 = LEDCluster::initRGBPixel(COLOR_RED, ABSCHNITT_D);
+  if (NULL != cluster4) {
+    ledController.addCluster(cluster4, ABSCHNITT_A+ABSCHNITT_B+ABSCHNITT_C);
+    Serial << F("Free Memory with Cluster4: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
+  }
+  LEDCluster *cluster5 = LEDCluster::initRGBPixel(COLOR_GREEN, ABSCHNITT_E);
+  if (NULL != cluster5) {
+    ledController.addCluster(cluster5, ABSCHNITT_A+ABSCHNITT_B+ABSCHNITT_C+ABSCHNITT_D);
+    Serial << F("Free Memory with Cluster5: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
+  }
+
+  LEDCluster *cluster6 = LEDCluster::initRGBPixel(COLOR_BLUE, ABSCHNITT_F);
+  if (NULL != cluster6) {
+    ledController.addCluster(cluster6, ABSCHNITT_A+ABSCHNITT_B+ABSCHNITT_C+ABSCHNITT_D+ABSCHNITT_E);
+    Serial << F("Free Memory with Cluster6: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
+  }
+
+  LEDCluster *cluster7 = LEDCluster::initRGBPixel(COLOR_YELLOW, ABSCHNITT_H);
+  if (NULL != cluster7) {
+    ledController.addCluster(cluster7, 682);
+    Serial << F("Free Memory with Cluster7: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
+  }
+
+  LEDCluster *cluster8 = LEDCluster::initRGBPixel(COLOR_CYAN, ABSCHNITT_I);
+  if (NULL != cluster8) {
+    ledController.addCluster(cluster8, 682+ABSCHNITT_H);
+    Serial << F("Free Memory with Cluster8: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
+  }
+
+  LEDCluster *cluster9 = LEDCluster::initRGBPixel(COLOR_MAGENTA, ABSCHNITT_J);
+  if (NULL != cluster9) {
+    ledController.addCluster(cluster9, 682+ABSCHNITT_H+ABSCHNITT_I);
+    Serial << F("Free Memory with Cluster9: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
+  }
+
+  LEDCluster *cluster10 = LEDCluster::initRGBPixel(COLOR_WHITE, ABSCHNITT_K);
+  if (NULL != cluster10) {
+    ledController.addCluster(cluster10, 682+ABSCHNITT_H+ABSCHNITT_I+ABSCHNITT_J);
+    Serial << F("Free Memory with Cluster10: ") << TrappmannRobotics::getFreeMemory() << F(" bytes\n");
   }
 
   uint32_t freeMemory = TrappmannRobotics::getFreeMemory();
